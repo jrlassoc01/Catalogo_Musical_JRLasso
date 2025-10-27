@@ -47,14 +47,14 @@ with st.expander("🔧 Filtros avanzados"):
     with col2:
         interprete = st.selectbox("Filtrar por Intérprete", ["(Todos)"] + sorted(df["Intérprete"].dropna().unique().tolist()))
     with col3:
-        formato = st.selectbox("Filtrar por Formato", ["(Todos)"] + sorted(df["Formato"].dropna().unique().tolist()))
+        cancion = st.selectbox("Filtrar por Canción", ["(Todos)"] + sorted(df["Canción"].dropna().unique().tolist()))
 
     if album != "(Todos)":
         resultados = resultados[resultados["Álbum"] == album]
     if interprete != "(Todos)":
         resultados = resultados[resultados["Intérprete"] == interprete]
-    if formato != "(Todos)":
-        resultados = resultados[resultados["Formato"] == formato]
+    if cancion != "(Todos)":
+        resultados = resultados[resultados["Canción"] == cancion]
 
 # ------------------------
 # Mostrar resultados finales
