@@ -22,6 +22,33 @@ except FileNotFoundError:
     st.error(f"No se encontró el archivo {archivo_excel}. Asegúrate de que esté en la misma carpeta.")
     st.stop()
 
+
+# ------------------------
+# Filtros especiales
+# ------------------------
+with st.expander("🔧 Filtros avanzados"):
+    col3, col2, col4 = st.columns(3)
+
+    with col3:
+        cancion = st.selectbox("Filtrar por Canción", ["(Todos)"] + sorted(df["Canción"].dropna().unique().tolist()))
+    with col2:
+        interprete = st.selectbox("Filtrar por Intérprete", ["(Todos)"] + sorted(df["Intérprete"].dropna().unique().tolist()))
+    with col4:
+        orquesta = st.selectbox("Filtrar por Orquesta", ["(Todos)"] + sorted(df["Orquesta"].dropna().unique().tolist()))
+
+    if cancion != "(Todos)":
+        resultados = resultados[resultados["Canción"] == cancion]
+    if interprete != "(Todos)":
+        resultados = resultados[resultados["Intérprete"] == interprete]
+    if orquesta != "(Todos)":
+        resultados = resultados[resultados["Orquesta"] == orquesta]
+
+# ------------------------
+# Mostrar resultados finales
+# ------------------------
+st.subheader("📋 Resultados filtrados")
+st.dataframe(resultados, use_container_width=True)
+
 # ------------------------
 # Búsqueda general
 # ------------------------
@@ -34,30 +61,4 @@ else:
     resultados = df
 
 st.write(f"📀 Resultados encontrados: {len(resultados)}")
-st.dataframe(resultados, use_container_width=True)
-
-# ------------------------
-# Filtros adicionales
-# ------------------------
-with st.expander("🔧 Filtros avanzados"):
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        album = st.selectbox("Filtrar por Álbum", ["(Todos)"] + sorted(df["Álbum"].dropna().unique().tolist()))
-    with col2:
-        interprete = st.selectbox("Filtrar por Intérprete", ["(Todos)"] + sorted(df["Intérprete"].dropna().unique().tolist()))
-    with col3:
-        cancion = st.selectbox("Filtrar por Canción", ["(Todos)"] + sorted(df["Canción"].dropna().unique().tolist()))
-
-    if album != "(Todos)":
-        resultados = resultados[resultados["Álbum"] == album]
-    if interprete != "(Todos)":
-        resultados = resultados[resultados["Intérprete"] == interprete]
-    if cancion != "(Todos)":
-        resultados = resultados[resultados["Canción"] == cancion]
-
-# ------------------------
-# Mostrar resultados finales
-# ------------------------
-st.subheader("📋 Resultados filtrados")
 st.dataframe(resultados, use_container_width=True)
