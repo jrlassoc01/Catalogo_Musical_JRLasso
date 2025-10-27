@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-from io import BytesIO
 
 # ------------------------
 # Configuración inicial
@@ -25,16 +24,28 @@ st.divider()
 # ------------------------
 # Cargar el catálogo
 # ------------------------
-ARCHIVO_EXCEL = "catalogo_musical.xlsx"
+ARCHIVO_EXCEL = "catalogo_musical.xlsx"   # Ajusta si tu archivo tiene otro nombre
 
 @st.cache_data
 def cargar_catalogo(path: str) -> pd.DataFrame:
     df = pd.read_excel(path)
+
+    # Normalizaciones mínimas
     if "Orquesta" in df.columns and "Orquesta/Solista" not in df.columns:
         df = df.rename(columns={"Orquesta": "Orquesta/Solista"})
     if "Año" not in df.columns:
         df["Año"] = ""
+
+    # Columna auxiliar para filtros numéricos por año (si la usas luego)
     df["_Año_num"] = pd.to_numeric(df["Año"], errors="coerce")
+
+    # Asegurar columnas esperadas
+    cols_necesarias = ["Álbum","Intérprete","Canción","Orquesta/Solista","Compositor","Año","Formato",
+                       "Sello","Número de catálogo","País","Notas"]
+    for c in cols_necesarias:
+        if c not in df.columns:
+            df[c] = pd.Series(dtype="object")
+
     return df
 
 try:
@@ -45,22 +56,22 @@ except FileNotFoundError:
     st.stop()
 
 # ------------------------
-# FILTROS AVANZADOS (ahora al inicio)
+# FILTROS AVANZADOS (primero)
 # ------------------------
 st.sidebar.header("🎧 Filtros principales")
 st.sidebar.caption("Selecciona una o más opciones para refinar tu búsqueda:")
 
-canciones = ["(Todas)"] + sorted(df["Canción"].dropna().unique().tolist())
-interpretes = ["(Todos)"] + sorted(df["Intérprete"].dropna().unique().tolist())
-orquestas = ["(Todas)"] + sorted(df["Orquesta/Solista"].dropna().unique().tolist())
+canciones    = ["(Todas)"] + sorted(df["Canción"].dropna().unique().tolist())
+interpretes  = ["(Todos)"] + sorted(df["Intérprete"].dropna().unique().tolist())
+orq_solistas = ["(Todas)"] + sorted(df["Orquesta/Solista"].dropna().unique().tolist())
 compositores = ["(Todos)"] + sorted(df["Compositor"].dropna().unique().tolist())
 
-can_sel = st.sidebar.selectbox("🎵 Canción", canciones)
-int_sel = st.sidebar.selectbox("🎤 Intérprete", interpretes)
-orq_sel = st.sidebar.selectbox("🎺 Orquesta / Solista", orquestas)
+can_sel  = st.sidebar.selectbox("🎵 Canción", canciones)
+int_sel  = st.sidebar.selectbox("🎤 Intérprete", interpretes)
+orq_sel  = st.sidebar.selectbox("🎺 Orquesta / Solista", orq_solistas)
 comp_sel = st.sidebar.selectbox("✍️ Compositor", compositores)
 
-# Aplicar filtros
+# Aplicar filtros en orden
 if can_sel != "(Todas)":
     resultados = resultados[resultados["Canción"] == can_sel]
 if int_sel != "(Todos)":
@@ -73,12 +84,14 @@ if comp_sel != "(Todos)":
 st.divider()
 
 # ------------------------
-# BÚSQUEDA RÁPIDA
+# BÚSQUEDA RÁPIDA (después de los filtros)
 # ------------------------
-busqueda = st.text_input("🔎 Buscar por cualquier palabra (álbum, sello, país, etc.)", "")
+busqueda = st.text_input("🔎 Buscar por cualquier palabra (álbum, sello, país, notas, etc.)", "")
 
 if busqueda.strip():
-    mask = resultados.apply(lambda row: row.astype(str).str.contains(busqueda, case=False, na=False).any(), axis=1)
+    mask = resultados.apply(
+        lambda row: row.astype(str).str.contains(busqueda, case=False, na=False).any(), axis=1
+    )
     resultados = resultados[mask]
 
 st.divider()
@@ -87,24 +100,16 @@ st.divider()
 # Mostrar resultados
 # ------------------------
 st.markdown("### 📋 Resultados filtrados")
-cols_mostrar = ["Álbum","Intérprete","Canción","Orquesta/Solista","Compositor","Año","Formato","Sello","Número de catálogo","País","Notas"]
+
+# Reordenar: Formato primero y sin encabezado visible
+cols_mostrar = ["Formato","Álbum","Intérprete","Canción","Orquesta/Solista","Compositor",
+                "Año","Sello","Número de catálogo","País","Notas"]
 cols_presentes = [c for c in cols_mostrar if c in resultados.columns]
-st.dataframe(resultados[cols_presentes], use_container_width=True, height=520)
 
-# ------------------------
-# Descarga
-# ------------------------
-col_dl1, col_dl2 = st.columns(2)
-with col_dl1:
-    csv_bytes = resultados[cols_presentes].to_csv(index=False).encode("utf-8-sig")
-    st.download_button("⬇️ Descargar CSV", data=csv_bytes, file_name="catalogo_filtrado.csv", mime="text/csv")
+# Renombrar 'Formato' a un encabezado vacío
+tabla = resultados[cols_presentes].rename(columns={"Formato": " "})
 
-with col_dl2:
-    def df_to_excel_bytes(df_in):
-        output = BytesIO()
-        with pd.ExcelWriter(output, engine="openpyxl") as writer:
-            df_in.to_excel(writer, index=False, sheet_name="Resultados")
-        return output.getvalue()
+# Mostrar sin índice y con Formato como primera columna (encabezado vacío)
+st.dataframe(tabla, use_container_width=True, height=520, hide_index=True)
 
-    xls_bytes = df_to_excel_bytes(resultados[cols_presentes])
-    st.download_button("⬇️ Descargar Excel", data=xls_bytes, file_name="catalogo_filtrado.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+st.caption("💡 Consejo: añade este enlace a la pantalla de inicio del teléfono para usarlo como app.")
