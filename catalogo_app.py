@@ -18,10 +18,10 @@ def cargar_catalogo(archivo):
 
 try:
     df = cargar_catalogo(archivo_excel)
+    resultados = df.copy()
 except FileNotFoundError:
     st.error(f"No se encontró el archivo {archivo_excel}. Asegúrate de que esté en la misma carpeta.")
     st.stop()
-
 
 # ------------------------
 # Filtros especiales
@@ -34,14 +34,14 @@ with st.expander("🔧 Filtros avanzados"):
     with col2:
         interprete = st.selectbox("Filtrar por Intérprete", ["(Todos)"] + sorted(df["Intérprete"].dropna().unique().tolist()))
     with col4:
-        orquesta = st.selectbox("Filtrar por Orquesta/Solista", ["(Todos)"] + sorted(df["Orquesta"].dropna().unique().tolist()))
+        orquesta = st.selectbox("Filtrar por Orquesta/Solista", ["(Todos)"] + sorted(df["Orquesta/Solista"].dropna().unique().tolist()))
 
     if cancion != "(Todos)":
         resultados = resultados[resultados["Canción"] == cancion]
     if interprete != "(Todos)":
         resultados = resultados[resultados["Intérprete"] == interprete]
     if orquesta != "(Todos)":
-        resultados = resultados[resultados["Orquesta"] == orquesta]
+        resultados = resultados[resultados["Orquesta/Solista"] == orquesta]
 
 # ------------------------
 # Mostrar resultados finales
@@ -62,4 +62,5 @@ else:
 
 st.write(f"📀 Resultados encontrados: {len(resultados)}")
 st.dataframe(resultados, use_container_width=True)
+
 
