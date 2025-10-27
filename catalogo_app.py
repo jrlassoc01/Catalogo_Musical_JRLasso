@@ -34,7 +34,7 @@ with st.expander("🔧 Filtros avanzados"):
     with col2:
         interprete = st.selectbox("Filtrar por Intérprete", ["(Todos)"] + sorted(df["Intérprete"].dropna().unique().tolist()))
     with col4:
-        orquesta = st.selectbox("Filtrar por Orquesta", ["(Todos)"] + sorted(df["Orquesta"].dropna().unique().tolist()))
+        orquesta = st.selectbox("Filtrar por Orquesta/Solista", ["(Todos)"] + sorted(df["Orquesta"].dropna().unique().tolist()))
 
     if cancion != "(Todos)":
         resultados = resultados[resultados["Canción"] == cancion]
@@ -62,3 +62,4 @@ else:
 
 st.write(f"📀 Resultados encontrados: {len(resultados)}")
 st.dataframe(resultados, use_container_width=True)
+
