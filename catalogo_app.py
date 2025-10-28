@@ -24,36 +24,36 @@ st.divider()
 # ------------------------
 # Cargar el catálogo
 # ------------------------
-ARCHIVO_EXCEL = "catalogo_musical.xlsx"   # Ajusta si tu archivo tiene otro nombre
+ARCHIVO_EXCEL = "catalogo_musical.xlsx"   # Asegúrate de que el nombre coincide exactamente
 
 @st.cache_data
 def cargar_catalogo(path: str) -> pd.DataFrame:
     df = pd.read_excel(path)
 
-    # Normalizaciones mínimas de nombres de columna
-    renames = {}
-    if "Orquesta" in df.columns and "Orquesta/Solista" not in df.columns:
-        renames["Orquesta"] = "Orquesta/Solista"
-    if "Genero" in df.columns and "Género" not in df.columns:
-        renames["Genero"] = "Género"
-    if "Ubicacion" in df.columns and "Ubicación" not in df.columns:
-        renames["Ubicacion"] = "Ubicación"
-    if "Posicion" in df.columns and "Posición" not in df.columns:
-        renames["Posicion"] = "Posición"
+    # Normalizar nombres de columnas (acentos y variantes)
+    renames = {
+        "Genero": "Género",
+        "Duracion": "Duración",
+        "Ubicacion": "Ubicación",
+        "Posicion": "Posición",
+        "Sello discografico": "Sello discográfico",
+        "Sello Discografico": "Sello discográfico",
+        "Catalogo": "Catálogo",
+    }
 
-    if renames:
-        df = df.rename(columns=renames)
+    for old, new in renames.items():
+        if old in df.columns and new not in df.columns:
+            df = df.rename(columns={old: new})
 
-    # Columnas esperadas (crea vacías si faltan)
-    cols_necesarias = [
-        "Álbum","Intérprete","Canción","Orquesta/Solista","Compositor","Año","Formato",
-        "Sello","Número de catálogo","Notas","Género","Ubicación","Posición"
+    # Verificar que todas las columnas esperadas existan (crear vacías si faltan)
+    cols_esperadas = [
+        "Álbum","Intérprete","Canción","Duración","Orquesta/Solista","Compositor",
+        "Género","Año","Formato","Sello discográfico","Catálogo","Ubicación","Posición","Notas"
     ]
-    for c in cols_necesarias:
+    for c in cols_esperadas:
         if c not in df.columns:
             df[c] = pd.Series(dtype="object")
 
-    df["_Año_num"] = pd.to_numeric(df["Año"], errors="coerce")
     return df
 
 try:
@@ -64,7 +64,7 @@ except FileNotFoundError:
     st.stop()
 
 # ------------------------
-# FILTROS AVANZADOS
+# FILTROS AVANZADOS (primero)
 # ------------------------
 st.sidebar.header("🎧 Filtros principales")
 st.sidebar.caption("Selecciona una o más opciones para refinar tu búsqueda:")
@@ -109,19 +109,19 @@ st.divider()
 st.markdown("### 📋 Resultados filtrados")
 
 cols_mostrar = [
-    "Formato", "Álbum", "Intérprete", "Canción", "Orquesta/Solista", "Compositor",
-    "Año", "Género", "Sello", "Número de catálogo", "Ubicación", "Posición", "Notas"
+    "Formato","Álbum","Intérprete","Canción","Duración","Orquesta/Solista","Compositor",
+    "Género","Sello discográfico","Catálogo","Ubicación","Posición","Notas"
 ]
 cols_presentes = [c for c in cols_mostrar if c in resultados.columns]
 
-# Renombrar 'Formato' a encabezado vacío
+# Renombrar Formato (sin encabezado visible)
 tabla = resultados[cols_presentes].rename(columns={"Formato": " "})
 
-# Limpia valores en blanco y elimina filas totalmente vacías (solo columnas existentes)
+# Limpieza de filas vacías
 subset_validas = [c for c in cols_presentes if c in tabla.columns]
 tabla = tabla.replace(r"^\s*$", pd.NA, regex=True).dropna(how="all", subset=subset_validas)
 
-# Altura dinámica según número de filas
+# Altura dinámica según número de resultados
 num_filas = len(tabla)
 row_h = 38
 header_h = 42
