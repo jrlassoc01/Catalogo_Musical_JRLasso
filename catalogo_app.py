@@ -57,18 +57,12 @@ except FileNotFoundError:
     st.stop()
 
 # ---------- Función reset ----------
+# ---------- Función reset (versión corregida) ----------
 def reset_busqueda():
-    st.session_state.update({
-        "f_can": "(Todas)",
-        "f_int": "(Todos)",
-        "f_orq": "(Todas)",
-        "f_comp": "(Todos)",
-        "q": "",
-        "vista": "Tabla",
-        "pag": 1,
-        "pp": 12,
-        "cols_tar": 2,
-    })
+    keys = ["f_can","f_int","f_orq","f_comp", "q", "vista", "pag", "pp", "cols_tar"]
+    for k in keys:
+        if k in st.session_state:
+            del st.session_state[k]
     st.rerun()
 
 # ---------- Barra lateral: Filtros (con keys) ----------
