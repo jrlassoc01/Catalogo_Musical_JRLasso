@@ -30,22 +30,30 @@ ARCHIVO_EXCEL = "catalogo_musical.xlsx"   # Ajusta si tu archivo tiene otro nomb
 def cargar_catalogo(path: str) -> pd.DataFrame:
     df = pd.read_excel(path)
 
-    # Normalizaciones mínimas
+    # Normalizaciones mínimas de nombres de columna
+    renames = {}
     if "Orquesta" in df.columns and "Orquesta/Solista" not in df.columns:
-        df = df.rename(columns={"Orquesta": "Orquesta/Solista"})
-    if "Año" not in df.columns:
-        df["Año"] = ""
+        renames["Orquesta"] = "Orquesta/Solista"
+    if "Genero" in df.columns and "Género" not in df.columns:
+        renames["Genero"] = "Género"
+    if "Ubicacion" in df.columns and "Ubicación" not in df.columns:
+        renames["Ubicacion"] = "Ubicación"
+    if "Posicion" in df.columns and "Posición" not in df.columns:
+        renames["Posicion"] = "Posición"
 
-    # Columna auxiliar para filtros numéricos por año (si la usas luego)
-    df["_Año_num"] = pd.to_numeric(df["Año"], errors="coerce")
+    if renames:
+        df = df.rename(columns=renames)
 
-    # Asegurar columnas esperadas
-    cols_necesarias = ["Álbum","Intérprete","Canción","Orquesta/Solista","Compositor","Año","Formato",
-                       "Sello","Número de catálogo","País","Notas"]
+    # Columnas esperadas (crea vacías si faltan)
+    cols_necesarias = [
+        "Álbum","Intérprete","Canción","Orquesta/Solista","Compositor","Año","Formato",
+        "Sello","Número de catálogo","Notas","Género","Ubicación","Posición"
+    ]
     for c in cols_necesarias:
         if c not in df.columns:
             df[c] = pd.Series(dtype="object")
 
+    df["_Año_num"] = pd.to_numeric(df["Año"], errors="coerce")
     return df
 
 try:
@@ -56,7 +64,7 @@ except FileNotFoundError:
     st.stop()
 
 # ------------------------
-# FILTROS AVANZADOS (primero)
+# FILTROS AVANZADOS
 # ------------------------
 st.sidebar.header("🎧 Filtros principales")
 st.sidebar.caption("Selecciona una o más opciones para refinar tu búsqueda:")
@@ -71,7 +79,6 @@ int_sel  = st.sidebar.selectbox("🎤 Intérprete", interpretes)
 orq_sel  = st.sidebar.selectbox("🎺 Orquesta / Solista", orq_solistas)
 comp_sel = st.sidebar.selectbox("✍️ Compositor", compositores)
 
-# Aplicar filtros en orden
 if can_sel != "(Todas)":
     resultados = resultados[resultados["Canción"] == can_sel]
 if int_sel != "(Todos)":
@@ -84,9 +91,9 @@ if comp_sel != "(Todos)":
 st.divider()
 
 # ------------------------
-# BÚSQUEDA RÁPIDA (después de los filtros)
+# BÚSQUEDA RÁPIDA
 # ------------------------
-busqueda = st.text_input("🔎 Buscar por cualquier palabra (álbum, sello, país, notas, etc.)", "")
+busqueda = st.text_input("🔎 Buscar por cualquier palabra (álbum, sello, género, notas, etc.)", "")
 
 if busqueda.strip():
     mask = resultados.apply(
@@ -101,15 +108,21 @@ st.divider()
 # ------------------------
 st.markdown("### 📋 Resultados filtrados")
 
-# Reordenar: Formato primero y sin encabezado visible
-cols_mostrar = ["Formato","Álbum","Intérprete","Canción","Orquesta/Solista","Compositor",
-                "Año","Sello","Número de catálogo","País","Notas"]
+cols_mostrar = [
+    "Formato", "Álbum", "Intérprete", "Canción", "Orquesta/Solista", "Compositor",
+    "Año", "Género", "Sello", "Número de catálogo", "Ubicación", "Posición", "Notas"
+]
 cols_presentes = [c for c in cols_mostrar if c in resultados.columns]
 
-# Renombrar 'Formato' a un encabezado vacío
 tabla = resultados[cols_presentes].rename(columns={"Formato": " "})
+tabla = tabla.replace(r"^\s*$", pd.NA, regex=True).dropna(how="all", subset=cols_presentes)
 
-# Mostrar sin índice y con Formato como primera columna (encabezado vacío)
-st.dataframe(tabla, use_container_width=True, height=520, hide_index=True)
+num_filas = len(tabla)
+row_h = 38
+header_h = 42
+min_h = 140
+max_h = 700
+altura = min(max_h, max(min_h, header_h + row_h * max(1, num_filas)))
 
-st.caption("💡 Consejo: añade este enlace a la pantalla de inicio del teléfono para usarlo como app.")
+st.dataframe(tabla, use_container_width=True, hide_index=True, height=altura)
+st.caption("💡 Consejo: añade este enlace a la pantalla de inicio de tu teléfono para usarlo como app.")
