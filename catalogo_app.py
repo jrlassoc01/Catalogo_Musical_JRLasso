@@ -114,9 +114,14 @@ cols_mostrar = [
 ]
 cols_presentes = [c for c in cols_mostrar if c in resultados.columns]
 
+# Renombrar 'Formato' a encabezado vacío
 tabla = resultados[cols_presentes].rename(columns={"Formato": " "})
-tabla = tabla.replace(r"^\s*$", pd.NA, regex=True).dropna(how="all", subset=cols_presentes)
 
+# Limpia valores en blanco y elimina filas totalmente vacías (solo columnas existentes)
+subset_validas = [c for c in cols_presentes if c in tabla.columns]
+tabla = tabla.replace(r"^\s*$", pd.NA, regex=True).dropna(how="all", subset=subset_validas)
+
+# Altura dinámica según número de filas
 num_filas = len(tabla)
 row_h = 38
 header_h = 42
@@ -125,4 +130,4 @@ max_h = 700
 altura = min(max_h, max(min_h, header_h + row_h * max(1, num_filas)))
 
 st.dataframe(tabla, use_container_width=True, hide_index=True, height=altura)
-st.caption("💡 Consejo: añade este enlace a la pantalla de inicio de tu teléfono para usarlo como app.")
+st.caption("💡 Consejo: añade este enlace a la pantalla de inicio del teléfono para usarlo como app.")
